@@ -40,7 +40,7 @@ async function createPost(title, content) {
         title,
         content,
         // populate the tsvector column
-        myVector: sequelize.fn('to_tsvector', title + ' ' + content),
+        myVector: sequelize.fn('to_tsquery', title + ' ' + content),
     });
 }
 
@@ -52,7 +52,11 @@ async function getQuery(query) {
     return POSTS.findAll({
         where: {
             myVector: {
+                // https://www.postgresql.org/docs/current/textsearch-controls.html
                 [Op.match]: sequelize.fn(`plainto_tsquery`, query)
+                // <-> FOLLOWED BY operators check lexeme order not just the presence of all the lexemes
+                // [Op.match]: sequelize.fn(`plainto_tsquery`, query)
+
             }
         }
     });
