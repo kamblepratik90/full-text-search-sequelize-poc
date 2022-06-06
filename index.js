@@ -1,5 +1,6 @@
 const { DataTypes, Op } = require('sequelize');
 const { sequelize } = require('./config/db.config');
+const profilator = require("profilator")(); // if you intend to use only one
 
 // 1. Add a TSVector as a column on the relevant model
 // 2. Add a text search index using the vector that was just created
@@ -71,28 +72,70 @@ async function getQuery(query) {
     });
 }
 
+async function getQuery2(query) {
+    return POSTS.findAll({
+        where: {
+
+            // content: {
+            //     [Op.like]: '%' + query + '%'
+            // }
+            [Op.or]: [
+                {
+                    title: {
+                        [Op.like]: '%' + query + '%'
+                    }
+                },
+                {
+                    content: {
+                        [Op.like]: '%' + query + '%'
+                    }
+                }
+            ]
+        }
+    });
+}
+
 async function start() {
 
+    profilator.start("sync");
     try {
         await POSTS.sync();
     } catch (error) {
         console.error(`error db model sync.. posts `, error);
         return;
     }
+    profilator.stop("sync");
 
-    // create a post
-    // const time = Date.now();
-    // const res = await createPost('Well Done!' + time, 'Happy New Year!, I am so happy. friends friendly nature' + time);
-    // console.log('res', res);
+    // // create a post
+    // profilator.start("createPost");
+    // for (let index = 0; index < 500; index++) {
+    //     const time = Date.now();
+    //     const res = await createPost('Well Done!' + time, 'Happy New Year!, I am so happy. friends friendly nature' + time);
+    //     profilator.stop("createPost");
+    //     // console.log('res', res);
+    // }
 
-    // get all posts
+    // // get all posts
+    // profilator.start("findAll");
     // const posts = await getPosts();
-    // console.log('posts', posts);
+    // profilator.stop("findAll");
+    // console.log('all posts', posts.length);
 
-    // get posts by query
-    // const query = await getQuery('friend');
-    // console.log('query', query.length);
+    // // get posts by query
+    // const search = 'happy';
+    // profilator.start("fts");
+    // let query = await getQuery(search);
+    // profilator.stop("fts");
+    // console.log('query0: ', query.length);
+    // if (query.length == 0) {
+    //     profilator.start("textSearch");
+    //     query = await getQuery2(search);
+    //     profilator.stop("textSearch");
+    //     console.log('query1: ', query.length);
+    // }
 
+    const resultsReport = profilator.buildResultsReport();
+    console.log(resultsReport);
 }
 
 start().then(() => {
