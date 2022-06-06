@@ -9,7 +9,7 @@ const { sequelize } = require('./config/db.config');
 
 // Define models
 const POSTS = sequelize.define(
-    "posts",
+    "posts_2",
     {
         title: {
             type: DataTypes.STRING
@@ -31,7 +31,14 @@ const POSTS = sequelize.define(
         timestamps: false,
 
         // I don't want createdAt
-        createdAt: false
+        createdAt: false,
+        indexes: [
+            // Creates a gin index on the tsvector column
+            {
+                fields: ['myVector'],
+                using: 'gin',
+            }
+        ]
     }
 );
 
@@ -40,7 +47,7 @@ async function createPost(title, content) {
         title,
         content,
         // populate the tsvector column
-        myVector: sequelize.fn('to_tsquery', title + ' ' + content),
+        myVector: sequelize.fn('to_tsvector', title + ' ' + content),
     });
 }
 
@@ -53,9 +60,11 @@ async function getQuery(query) {
         where: {
             myVector: {
                 // https://www.postgresql.org/docs/current/textsearch-controls.html
-                [Op.match]: sequelize.fn(`plainto_tsquery`, query)
+                // [Op.match]: sequelize.fn(`plainto_tsquery`, query)
                 // <-> FOLLOWED BY operators check lexeme order not just the presence of all the lexemes
                 // [Op.match]: sequelize.fn(`plainto_tsquery`, query)
+                // to_tsquery
+                [Op.match]: sequelize.fn(`plainto_tsquery`, query)
 
             }
         }
@@ -71,15 +80,18 @@ async function start() {
         return;
     }
 
+    // create a post
     // const time = Date.now();
-    // const res = await createPost('Well Done!' + time, 'Happy New Year!, I am so happy ' + time);
+    // const res = await createPost('Well Done!' + time, 'Happy New Year!, I am so happy. friends friendly nature' + time);
     // console.log('res', res);
 
+    // get all posts
     // const posts = await getPosts();
     // console.log('posts', posts);
 
-    const query = await getQuery('new year');
-    console.log('query', query.length);
+    // get posts by query
+    // const query = await getQuery('friend');
+    // console.log('query', query.length);
 
 }
 
