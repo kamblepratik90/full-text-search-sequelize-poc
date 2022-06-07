@@ -11,7 +11,7 @@ console.log(`DATABASE_URI = ${DATABASE_URI}`);
 
 const sequelize = new Sequelize(DATABASE_URI, {
   // logging: (...msg) => console.log(msg), // Displays all log function call parameters
-  logging: false,
+  logging: true,
   // this goes to retry-as-promised for queries
   retry: {
     match: [
