@@ -56,49 +56,75 @@ async function getPosts() {
     return POSTS.findAll();
 }
 
-async function getQuery(query) {
-    return POSTS.findAll({
-        where: {
-            myVector: {
-                // https://www.postgresql.org/docs/current/textsearch-controls.html
-                // [Op.match]: sequelize.fn(`plainto_tsquery`, query)
-                // <-> FOLLOWED BY operators check lexeme order not just the presence of all the lexemes
-                [Op.match]: sequelize.fn(`to_tsquery`, query)
-                // to_tsquery
-                // [Op.match]: sequelize.fn(`plainto_tsquery`, query)
-                // [Op.substring]: sequelize.fn(`to_tsquery`, query)
-
-            }
-        }
+async function getQuery(query, offset = 0, limit = 5) {
+    return POSTS.findAndCountAll({
+        where:
+        {
+            myVector: { [Op.match]: sequelize.fn(`to_tsquery`, query) }
+        }, offset: offset, limit: limit
     });
+
+    // return POSTS.findAll({
+    //     where: {
+    //         myVector: {
+    //             // https://www.postgresql.org/docs/current/textsearch-controls.html
+    //             // [Op.match]: sequelize.fn(`plainto_tsquery`, query)
+    //             // <-> FOLLOWED BY operators check lexeme order not just the presence of all the lexemes
+    //             [Op.match]: sequelize.fn(`to_tsquery`, query)
+    //             // to_tsquery
+    //             // [Op.match]: sequelize.fn(`plainto_tsquery`, query)
+    //             // [Op.substring]: sequelize.fn(`to_tsquery`, query)
+
+    //         }
+    //     }
+    // });
 }
 
 // SELECT "id", "title", "content", "myVector" FROM "posts_2" AS "posts_2" WHERE "posts_2"."myVector" @@ to_tsquery('frie');
 
-async function getQuery2(query) {
-    return POSTS.findAll({
-        where: {
+async function getQuery2(query, offset = 0, limit = 5) {
+    // return POSTS.findAll({
+    //     where: {
 
-            content: {
-                // [Op.like]: '%' + query + '%'
-                //     [Op.substring]: 'hat'
-                [Op.iLike]: '%' + query + '%'
-            }
-            // [Op.or]: [
-            //     {
-            //         title: {
-            //             // [Op.like]: '%' + query + '%'
-            //             [Op.substring]: query
-            //         }
-            //     },
-            //     {
-            //         content: {
-            //             // [Op.like]: '%' + query + '%'
-            //             [Op.substring]: query
-            //         }
-            //     }
-            // ]
-        }
+    //         content: {
+    //             // [Op.like]: '%' + query + '%'
+    //             //     [Op.substring]: 'hat'
+    //             [Op.iLike]: '%' + query + '%'
+    //         }
+    //         // [Op.or]: [
+    //         //     {
+    //         //         title: {
+    //         //             // [Op.like]: '%' + query + '%'
+    //         //             [Op.substring]: query
+    //         //         }
+    //         //     },
+    //         //     {
+    //         //         content: {
+    //         //             // [Op.like]: '%' + query + '%'
+    //         //             [Op.substring]: query
+    //         //         }
+    //         //     }
+    //         // ]
+    //     }
+    // });
+    return POSTS.findAndCountAll({
+        where:
+        {
+            [Op.or]: [
+                {
+                    title: {
+                        // [Op.like]: '%' + query + '%'
+                        [Op.substring]: query
+                    }
+                },
+                {
+                    content: {
+                        // [Op.like]: '%' + query + '%'
+                        [Op.substring]: query
+                    }
+                }
+            ]
+        }, offset: offset, limit: limit
     });
 }
 
@@ -114,8 +140,8 @@ async function start() {
     profilator.stop("sync");
 
     // // create a post
-    // profilator.start("createPost");
-    // for (let index = 0; index < 500; index++) {
+    profilator.start("createPost");
+    // for (let index = 0; index < 50; index++) {
     //     const time = Date.now();
     //     const res = await createPost('Well Done!' + time, 'Happy New Year!, I am so happy. friends friendly nature' + time);
     //     profilator.stop("createPost");
@@ -129,17 +155,17 @@ async function start() {
     // console.log('all posts', posts.length);
 
     // get posts by query
-    const search = 'frie';
+    const search = 'fri';
     profilator.start("fts");
-    let query = await getQuery(search);
+    let query = await getQuery(search, 0, 2);
     profilator.stop("fts");
-    console.log('query0: ', query.length);
+    console.log('query0: ', query);
 
-    if (query.length == 0) {
+    if (query.rows.length == 0) {
         profilator.start("textSearch");
-        query = await getQuery2(search);
+        query = await getQuery2(search, 1, 2);
         profilator.stop("textSearch");
-        console.log('query1: ', query.length);
+        console.log('query1: ', query);
     }
 
     const resultsReport = profilator.buildResultsReport();
