@@ -148,7 +148,7 @@ async function start() {
 
     console.log('results', results);
     console.log('metadata', metadata);
-    profilator.start("sync");
+    // profilator.start("sync");
     try {
         await POSTS.sync();
     } catch (error) {
@@ -157,34 +157,34 @@ async function start() {
     }
     profilator.stop("sync");
 
-    [results, metadata] = await sequelize.query("CREATE INDEX gin_trgm_idx ON posts USING gin ((title || ' ' || content || ' ' || tags || ' ' || properties) gin_trgm_ops);");
+    [results, metadata] = await sequelize.query("CREATE INDEX IF NOT EXISTS gin_trgm_idx ON posts USING gin ((title || ' ' || content || ' ' || tags || ' ' || properties) gin_trgm_ops);");
 
     console.log('results', results);
     console.log('metadata', metadata);
 
-    // // create a post
-    // profilator.start("createPost");
-    for (let index = 0; index < 5; index++) {
-        const time = Date.now();
-        const tags = [
-            "Cartoon",
-            "Organ",
-            "Happy",
-            "Organism",
-            "Gesture",
-            "Pink",
-            "Art",
-            "Font",
-            "Magenta",
-            "Handwriting"
-        ];
-        const properties = {
-            "Coffee": "Black"
-        };
-        const res = await createPost('Well Done!' + time, 'Happy New Year!, I am so happy. friends friendly nature' + time, tags, properties);
-        profilator.stop("createPost");
-        //     // console.log('res', res);
-    }
+    // // // create a post
+    // // profilator.start("createPost");
+    // for (let index = 0; index < 5; index++) {
+    //     const time = Date.now();
+    //     const tags = [
+    //         "Cartoon",
+    //         "Organ",
+    //         "Happy",
+    //         "Organism",
+    //         "Gesture",
+    //         "Pink",
+    //         "Art",
+    //         "Font",
+    //         "Magenta",
+    //         "Handwriting"
+    //     ];
+    //     const properties = {
+    //         "Coffee": "Black"
+    //     };
+    //     const res = await createPost('Well Done!' + time, 'Happy New Year!, I am so happy. friends friendly nature' + time, tags, properties);
+    //     profilator.stop("createPost");
+    //     //     // console.log('res', res);
+    // }
 
     // // get all posts
     // profilator.start("findAll");
