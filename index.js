@@ -10,13 +10,19 @@ const profilator = require("profilator")(); // if you intend to use only one
 
 // Define models
 const POSTS = sequelize.define(
-    "posts_2",
+    "posts",
     {
         title: {
             type: DataTypes.STRING
         },
         content: {
             type: DataTypes.STRING
+        },
+        tags: {
+            type: DataTypes.JSONB
+        },
+        properties: {
+            type: DataTypes.JSONB
         },
         // add tsvector column
         myVector: {
@@ -33,22 +39,30 @@ const POSTS = sequelize.define(
 
         // I don't want createdAt
         createdAt: false,
-        indexes: [
-            // Creates a gin index on the tsvector column
-            {
-                fields: ['myVector'],
-                using: 'gin',
-            }
-        ]
+        // indexes: [
+        //     // Creates a gin index on the tsvector column
+        //     // {
+        //     //     fields: ['myVector'],
+        //     //     using: 'gin',
+        //     // },
+        //     // Creates a gin trgm index on the 'title', 'content', 'tags', 'properties' columns
+        //     {
+        //         fields: ['title', 'content'],
+        //         using: 'gin',
+        //         operator: 'gin_trgm_ops'
+        //     }
+        // ]
     }
 );
 
-async function createPost(title, content) {
+async function createPost(title, content, tags, properties) {
     return POSTS.create({
         title,
         content,
+        tags,
+        properties,
         // populate the tsvector column
-        myVector: sequelize.fn('to_tsvector', title + ' ' + content),
+        myVector: sequelize.fn('to_tsvector', title + ' ' + content + ' ' + JSON.stringify(tags) + ' ' + JSON.stringify(properties)),
     });
 }
 
@@ -130,6 +144,10 @@ async function getQuery2(query, offset = 0, limit = 5) {
 
 async function start() {
 
+    let [results, metadata] = await sequelize.query("CREATE EXTENSION IF NOT EXISTS pg_trgm;");
+
+    console.log('results', results);
+    console.log('metadata', metadata);
     profilator.start("sync");
     try {
         await POSTS.sync();
@@ -139,14 +157,34 @@ async function start() {
     }
     profilator.stop("sync");
 
+    [results, metadata] = await sequelize.query("CREATE INDEX gin_trgm_idx ON posts USING gin ((title || ' ' || content || ' ' || tags || ' ' || properties) gin_trgm_ops);");
+
+    console.log('results', results);
+    console.log('metadata', metadata);
+
     // // create a post
-    profilator.start("createPost");
-    // for (let index = 0; index < 50; index++) {
-    //     const time = Date.now();
-    //     const res = await createPost('Well Done!' + time, 'Happy New Year!, I am so happy. friends friendly nature' + time);
-    //     profilator.stop("createPost");
-    //     //     // console.log('res', res);
-    // }
+    // profilator.start("createPost");
+    for (let index = 0; index < 5; index++) {
+        const time = Date.now();
+        const tags = [
+            "Cartoon",
+            "Organ",
+            "Happy",
+            "Organism",
+            "Gesture",
+            "Pink",
+            "Art",
+            "Font",
+            "Magenta",
+            "Handwriting"
+        ];
+        const properties = {
+            "Coffee": "Black"
+        };
+        const res = await createPost('Well Done!' + time, 'Happy New Year!, I am so happy. friends friendly nature' + time, tags, properties);
+        profilator.stop("createPost");
+        //     // console.log('res', res);
+    }
 
     // // get all posts
     // profilator.start("findAll");
@@ -154,19 +192,19 @@ async function start() {
     // profilator.stop("findAll");
     // console.log('all posts', posts.length);
 
-    // get posts by query
-    const search = 'fri';
-    profilator.start("fts");
-    let query = await getQuery(search, 0, 2);
-    profilator.stop("fts");
-    console.log('query0: ', query);
+    // // get posts by query
+    // const search = 'fri';
+    // profilator.start("fts");
+    // let query = await getQuery(search, 0, 2);
+    // profilator.stop("fts");
+    // console.log('query0: ', query);
 
-    if (query.rows.length == 0) {
-        profilator.start("textSearch");
-        query = await getQuery2(search, 1, 2);
-        profilator.stop("textSearch");
-        console.log('query1: ', query);
-    }
+    // if (query.rows.length == 0) {
+    //     profilator.start("textSearch");
+    //     query = await getQuery2(search, 1, 2);
+    //     profilator.stop("textSearch");
+    //     console.log('query1: ', query);
+    // }
 
     const resultsReport = profilator.buildResultsReport();
     console.log(resultsReport);
