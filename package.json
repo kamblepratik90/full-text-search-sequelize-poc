@@ -5,7 +5,7 @@
   "license": "MIT",
   "dependencies": {
     "dotenv": "^16.0.1",
-    "pg": "^8.7.3",
+    "pg": "^8.8.0",
     "profilator": "^1.2.0",
     "sequelize": "^6.20.1"
   },
